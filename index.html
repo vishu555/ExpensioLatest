@@ -156,7 +156,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0}
 /* ═══════════════════════════════════════════
    HEADER
 ═══════════════════════════════════════════ */
-header{position:sticky;top:0;z-index:200;background:var(--header-bg);box-shadow:0 4px 20px rgba(0,0,0,.15);border-bottom:none;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;transition:background .4s,color .3s;min-height:64px}
+header{position:sticky;top:0;z-index:200;background:var(--header-bg);box-shadow:0 4px 20px rgba(0,0,0,.15);border-bottom:none;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;transition:background .4s,color .3s;min-height:64px;overflow:visible}
 .logo{font-family:var(--font-ui);font-weight:800;font-size:1.3rem;letter-spacing:.02em;color:var(--header-txt,var(--acc));display:flex;align-items:center;gap:8px;transition:color .3s;text-transform:uppercase}
 .logo-sub{font-family:var(--font-ui);font-size:.52rem;font-weight:600;color:var(--header-dim,rgba(255,255,255,.75));letter-spacing:.18em;text-transform:uppercase;align-self:center}
 nav{display:flex;gap:2px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:3px;transition:all .3s;backdrop-filter:blur(8px)}
@@ -840,9 +840,9 @@ pre{font-size:.65rem;color:var(--mid);line-height:1.85;background:var(--s3);bord
 
 /* User dropdown */
 #user-dropdown{
-  position:absolute;top:calc(100% + 8px);right:0;z-index:500;
-  background:var(--s1);border-radius:16px;padding:.5rem;min-width:220px;
-  box-shadow:0 8px 32px rgba(0,0,0,.15);border:1px solid var(--border);
+  position:absolute;top:calc(100% + 10px);right:0;z-index:2000;
+  background:var(--s1);border-radius:16px;padding:.5rem;min-width:230px;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);border:1px solid var(--border);
   display:none;animation:fadeIn .18s ease;
 }
 #user-dropdown.open{display:block}
@@ -854,9 +854,9 @@ pre{font-size:.65rem;color:var(--mid);line-height:1.85;background:var(--s3);bord
 .user-plan.trial{background:#fef3c7;color:#b45309}
 .user-plan.pro{background:#d1fae5;color:#065f46}
 .user-plan.expired{background:#fee2e2;color:#b91c1c}
-.dd-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;
-  cursor:pointer;font-size:.75rem;color:var(--mid);transition:all .12s;width:100%;
-  background:none;border:none;text-align:left;font-family:'DM Mono',monospace}
+.dd-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  cursor:pointer;font-size:.78rem;color:var(--mid);transition:all .12s;width:100%;
+  background:none;border:none;text-align:left;font-family:var(--font-ui,'Syne',sans-serif);font-weight:600}
 .dd-item:hover{background:var(--s3);color:var(--txt)}
 .dd-item.danger:hover{background:rgba(239,68,68,.08);color:var(--danger)}
 .hdr-user{position:relative}
@@ -899,6 +899,16 @@ pre{font-size:.65rem;color:var(--mid);line-height:1.85;background:var(--s3);bord
     <span id="plan-badge" class="trial" onclick="openPaywall()">Trial</span>
     <div class="hdr-user">
       <button class="user-menu-btn" id="user-avatar-btn" onclick="toggleUserMenu()">👤</button>
+      <div id="user-dropdown">
+        <div class="user-info">
+          <div class="user-name" id="dd-user-name">—</div>
+          <div class="user-email" id="dd-user-email">—</div>
+          <div class="user-plan trial" id="dd-user-plan">Free Trial</div>
+        </div>
+        <button class="dd-item" id="dd-upgrade-btn" onclick="openPaywall()">⭐ Upgrade to Pro</button>
+        <button class="dd-item" onclick="closeUserMenu();go('settings')">⚙ Settings</button>
+        <button class="dd-item danger" id="dd-signout-btn" onclick="signOutUser()">↩ Sign Out</button>
+      </div>
     </div>
   </div>
 </header>
@@ -3218,546 +3228,264 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ║          FIREBASE + LICENSE + RAZORPAY SYSTEM           ║
 // ╚══════════════════════════════════════════════════════════╝
 
-// ─── CONFIGURATION ─────────────────────────────────────────
-// ⚠ REPLACE these values with your own Firebase project config
-// ─── RUNTIME CONFIG — loaded securely from server ──────────
-// No secrets are stored in this file. All keys are
-// environment variables on Netlify, served via a function.
-let FIREBASE_CONFIG = null;
-let RAZORPAY_KEY_ID = null;
+// ─── STEP 1: PASTE YOUR FIREBASE CONFIG HERE ───────────────
+// Get from: Firebase Console → Project Settings → Your apps
+// → Web → SDK setup → firebaseConfig
+const FIREBASE_CONFIG = {
+  apiKey:            "PASTE_YOUR_FIREBASE_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
 
+// ─── STEP 2: PASTE YOUR RAZORPAY KEY ID HERE ───────────────
+// Get from: Razorpay Dashboard → Settings → API Keys → Key ID
+// Use rzp_test_... for testing, rzp_live_... for production
+const RAZORPAY_KEY_ID = "rzp_test_PASTE_YOUR_KEY_ID";
+
+// ─── PLAN SETTINGS ─────────────────────────────────────────
 const PLAN = {
-  TRIAL_DAYS:        30,
-  TRIAL_MAX_EXP:     50,
-  PRO_PRICE:         499,
+  TRIAL_DAYS:        30,    // free trial duration
+  TRIAL_MAX_EXP:     50,    // max expenses on trial
+  PRO_PRICE:         499,   // ₹ per year
   PRO_DURATION_DAYS: 365
 };
 
+// ─── INTERNAL STATE ────────────────────────────────────────
 let _fbApp, _auth, _db;
 let _user    = null;
 let _license = null;
 let _fbReady = false;
 
+const _UNCONFIGURED = 'PASTE_YOUR_FIREBASE_API_KEY';
+const _isConfigured = () => FIREBASE_CONFIG.apiKey !== _UNCONFIGURED;
 const _isLocal      = location.protocol === 'file:';
-const _isConfigured = () => FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey;
 
-// Fetch config from Netlify function (env vars never exposed to browser)
+// On Netlify production: override config from server env vars
+// On direct webapp / localhost: use the config pasted above
 async function loadConfig() {
-  if (_isLocal) return null; // demo mode when local
-  try {
-    const res = await fetch('/.netlify/functions/config');
-    if (!res.ok) throw new Error('Config HTTP ' + res.status);
-    const cfg = await res.json();
-    FIREBASE_CONFIG  = cfg.firebase;
-    RAZORPAY_KEY_ID  = cfg.razorpayKeyId;
-    // Optionally override plan from server config
-    if (cfg.plan) Object.assign(PLAN, cfg.plan);
-    return cfg;
-  } catch (e) {
-    console.error('[Config] Failed to load:', e.message);
-    return null;
+  const isNetlify = location.hostname.endsWith('netlify.app') ||
+                    location.hostname.endsWith('netlify.com');
+  if (!_isLocal && isNetlify) {
+    try {
+      const res = await fetch('/.netlify/functions/config',
+                              { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg?.firebase?.apiKey) {
+          Object.assign(FIREBASE_CONFIG, cfg.firebase);
+          if (cfg.razorpayKeyId) window._RZP_KEY = cfg.razorpayKeyId;
+          if (cfg.plan) Object.assign(PLAN, cfg.plan);
+          console.log('[Auth] Config loaded from Netlify env vars');
+        }
+      }
+    } catch(e) { /* not on Netlify or function unavailable */ }
   }
 }
 
 // ─── FIREBASE INIT ─────────────────────────────────────────
 async function initFirebase() {
-  // Load config from server first
-  const cfg = await loadConfig();
+  await loadConfig();
 
-  // Demo mode: local file or config unavailable
+  // Not configured yet → demo mode (all features unlocked, no login)
   if (!_isConfigured() || _isLocal) {
-    const reason = _isLocal
-      ? 'Local file — deploy to Netlify for full auth'
-      : 'Server config unavailable';
-    console.warn('[Auth] ' + reason + ' — demo mode active');
-    _license = { plan: 'demo', status: 'active' };
-    hideAuthScreen();
-    applyLicenseGates();
-    updatePlanBadge();
+    const why = _isLocal
+      ? 'Local file: deploy to Netlify or run: npx serve .'
+      : 'Firebase config not set — paste your config at the top of the script';
+    _enterDemoMode(why);
     return;
   }
 
-  // Check Firebase SDK loaded
   if (typeof firebase === 'undefined') {
-    console.error('[Auth] Firebase SDK not loaded. Check internet connection.');
-    _enterDemoMode('Firebase SDK failed to load');
+    _enterDemoMode('Firebase SDK failed to load — check internet');
     return;
   }
 
   try {
-    // Prevent double-init if called multiple times
-    if (firebase.apps.length === 0) {
-      _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
-    } else {
-      _fbApp = firebase.apps[0];
-    }
+    _fbApp   = firebase.apps.length === 0
+               ? firebase.initializeApp(FIREBASE_CONFIG)
+               : firebase.apps[0];
     _auth    = firebase.auth();
     _db      = firebase.firestore();
     _fbReady = true;
-
-    // Configure Firestore for better offline behaviour
-    _db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
-
-    // Listen for auth state — this fires immediately with cached state
-    _auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        _user = user;
-        showAuthLoading('Loading your account…');
-        try {
-          await loadLicense(user.uid);
-        } catch (e) {
-          console.error('[License]', e);
-          // Graceful fallback — don't block the app
-          _license = { plan: 'trial', status: 'active',
-            expiryDate: Date.now() + PLAN.TRIAL_DAYS * 86400000 };
-        }
-        hideAuthScreen();
-        updateUserUI();
-        applyLicenseGates();
-      } else {
-        _user    = null;
-        _license = null;
-        hideAuthLoading();
-        showAuthScreen();
-      }
-    });
-
-  } catch (e) {
-    console.error('[Firebase] Init error:', e.message);
-    _enterDemoMode('Firebase init error: ' + e.message);
+  } catch(e) {
+    _enterDemoMode('Firebase init: ' + e.message);
+    return;
   }
+
+  _auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      _user = user;
+      _showSpinner('Loading your account…');
+      try {
+        await loadLicense(user.uid);
+      } catch(e) {
+        console.error('[License]', e.message);
+        _license = { plan:'trial', status:'active',
+          expiryDate: Date.now() + PLAN.TRIAL_DAYS * 86400000 };
+      }
+      hideAuthScreen();
+      updateUserUI();
+      applyLicenseGates();
+    } else {
+      _user    = null;
+      _license = null;
+      _hideSpinner();
+      showAuthScreen();
+    }
+  });
 }
 
 function _enterDemoMode(reason) {
   console.warn('[Auth] Demo mode —', reason);
+  _fbReady = false;
+  _user    = null;
   _license = { plan: 'demo', status: 'active' };
   hideAuthScreen();
-  applyLicenseGates();
-  updatePlanBadge();
+  if (typeof applyLicenseGates === 'function') applyLicenseGates();
+  if (typeof updatePlanBadge  === 'function')  updatePlanBadge();
 }
+
+// ─── SPINNER HELPERS ───────────────────────────────────────
+function _showSpinner(msg) {
+  const ui  = document.getElementById('auth-login-ui');
+  const sp  = document.getElementById('auth-loading');
+  const txt = document.getElementById('auth-loading-msg');
+  if (ui)  ui.style.display  = 'none';
+  if (sp)  sp.style.display  = 'flex';
+  if (txt) txt.textContent   = msg || 'Please wait…';
+}
+function _hideSpinner() {
+  const ui = document.getElementById('auth-login-ui');
+  const sp = document.getElementById('auth-loading');
+  if (ui) ui.style.display = 'block';
+  if (sp) sp.style.display = 'none';
+}
+// Backward-compat aliases
+function showAuthLoading(msg) { _showSpinner(msg); }
+function hideAuthLoading()    { _hideSpinner(); }
 
 // ─── GOOGLE SIGN-IN ────────────────────────────────────────
 async function signInWithGoogle() {
   if (_isLocal) {
-    toast('Open via a web server to use Google login (Netlify or localhost:3000)', 'er');
+    toast('Needs a web server — run: npx serve .  or deploy to Netlify', 'er');
     return;
   }
-  if (!_fbReady) {
-    toast('Firebase not ready. Check your config in the HTML file.', 'er');
+  if (!_fbReady || !_auth) {
+    toast('Auth not ready — ensure all FIREBASE env vars are set in Netlify and the site is redeployed', 'er');
     return;
   }
-
-  showAuthLoading('Opening Google sign-in…');
-
+  _showSpinner('Opening Google sign-in…');
   const provider = new firebase.auth.GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  // Force account picker every time
   provider.setCustomParameters({ prompt: 'select_account' });
 
   try {
-    // Try popup first
     await _auth.signInWithPopup(provider);
-    // onAuthStateChanged handles navigation
-  } catch (e) {
-    hideAuthLoading();
+  } catch(e) {
+    _hideSpinner();
     if (e.code === 'auth/popup-blocked') {
-      // Popup blocked (common in some browsers) — fallback to redirect
-      showAuthLoading('Redirecting to Google…');
-      try {
-        await _auth.signInWithRedirect(provider);
-      } catch (re) {
-        hideAuthLoading();
-        toast('Sign-in failed: ' + (re.message || re.code), 'er');
-      }
+      _showSpinner('Redirecting to Google…');
+      try { await _auth.signInWithRedirect(provider); }
+      catch(re) { _hideSpinner(); toast('Sign-in failed: ' + re.message, 'er'); }
     } else if (e.code === 'auth/popup-closed-by-user' ||
                e.code === 'auth/cancelled-popup-request') {
-      // User closed — just reset UI silently
-      hideAuthLoading();
+      // user closed — silent
     } else if (e.code === 'auth/unauthorized-domain') {
-      hideAuthLoading();
-      toast('This domain is not authorised in Firebase. Add it to Authentication → Settings → Authorized domains.', 'er');
+      toast('Domain not authorised — add it in Firebase → Authentication → Authorized domains', 'er');
     } else if (e.code === 'auth/network-request-failed') {
-      hideAuthLoading();
-      toast('Network error. Check your internet connection.', 'er');
+      toast('Network error — check your connection', 'er');
     } else {
-      hideAuthLoading();
-      console.error('[Auth] Sign-in error:', e);
+      console.error('[Auth]', e);
       toast('Sign-in failed: ' + (e.message || e.code), 'er');
     }
   }
 }
 
+// ─── SIGN OUT ──────────────────────────────────────────────
 async function signOutUser() {
   closeUserMenu();
-  if (!_fbReady) {
-    // Demo mode — just show login screen
-    _license = null;
+  _user    = null;
+  _license = null;
+
+  if (!_fbReady || !_auth) {
     showAuthScreen();
+    toast('Signed out', 'in');
     return;
   }
   try {
     await _auth.signOut();
     toast('Signed out', 'in');
-  } catch (e) {
-    console.error('[Auth] Sign-out error:', e);
-  }
-}
-
-// ─── LICENSE MANAGEMENT ────────────────────────────────────
-async function loadLicense(uid) {
-  try {
-    const doc = await _db.collection('licenses').doc(uid).get();
-    if (doc.exists) {
-      _license = doc.data();
-    } else {
-      // First login — create trial record
-      const now   = Date.now();
-      const trial = {
-        plan:       'trial',
-        status:     'active',
-        startDate:  now,
-        expiryDate: now + PLAN.TRIAL_DAYS * 86400000,
-        email:      _user.email,
-        name:       _user.displayName,
-        createdAt:  now,
-        updatedAt:  now,
-      };
-      await _db.collection('licenses').doc(uid).set(trial);
-      _license = trial;
-    }
-    // Check expiry
-    if (_license.expiryDate && Date.now() > _license.expiryDate) {
-      _license.status = 'expired';
-      await _db.collection('licenses').doc(uid).update({ status: 'expired' });
-    }
-  } catch (e) {
-    console.error('[License] Load error:', e);
-    _license = { plan: 'trial', status: 'active', expiryDate: Date.now() + 86400000 };
-  }
-}
-
-function getLicensePlan()   { return _license?.plan   || 'trial'; }
-function getLicenseStatus() { return _license?.status || 'active'; }
-function isPro()     { return getLicensePlan() === 'pro'  && getLicenseStatus() === 'active'; }
-function isTrial()   { return getLicensePlan() === 'trial'&& getLicenseStatus() === 'active'; }
-function isExpired() { return getLicenseStatus() === 'expired'; }
-function isDemo()    { return getLicensePlan() === 'demo'; }
-
-function trialDaysLeft() {
-  if (!_license?.expiryDate) return PLAN.TRIAL_DAYS;
-  const ms = _license.expiryDate - Date.now();
-  return Math.max(0, Math.ceil(ms / 86400000));
-}
-
-// ─── FEATURE GATES ─────────────────────────────────────────
-// Pro-only: Loans tab, Goals tab, unlimited history
-function applyLicenseGates() {
-  const allowed = isPro() || isDemo();
-
-  // Budget view — lock Loans & Goals panels if not Pro
-  const loansGate = document.getElementById('loans-gate');
-  const goalsGate = document.getElementById('goals-gate');
-  if (loansGate) loansGate.style.display = allowed ? 'none' : 'flex';
-  if (goalsGate) goalsGate.style.display = allowed ? 'none' : 'flex';
-
-  // Budget view KPI — loan outstanding card dimmed
-  const loanKpi = document.getElementById('bv-loan-outstanding');
-  if (loanKpi) loanKpi.closest('.kpi').style.opacity = allowed ? '1' : '.45';
-
-  // Expense limit enforcement
-  enforceExpenseLimit();
-
-  // Update badge
-  updatePlanBadge();
-}
-
-function enforceExpenseLimit() {
-  if (isPro() || isDemo()) return; // unlimited
-  if (isExpired()) {
-    // Show paywall on any interaction
-    return;
-  }
-  // Trial: max 50 expenses
-  if (EX.length >= PLAN.TRIAL_MAX_EXP) {
-    toast('Trial limit reached (50 expenses). Upgrade to Pro for unlimited history.', 'er');
-  }
-}
-
-// Override addExp to check limit
-const _origAddExp = window.addExp;
-window.addExp = function() {
-  if (isExpired()) { openPaywall('expired'); return; }
-  if (isTrial() && EX.length >= PLAN.TRIAL_MAX_EXP) {
-    openPaywall('limit'); return;
-  }
-  _origAddExp?.apply(this, arguments);
-};
-const _origAddExpSheet = window.addExpSheet;
-window.addExpSheet = function() {
-  if (isExpired()) { openPaywall('expired'); return; }
-  if (isTrial() && EX.length >= PLAN.TRIAL_MAX_EXP) {
-    openPaywall('limit'); return;
-  }
-  _origAddExpSheet?.apply(this, arguments);
-};
-
-// Override addLoan to check Pro
-const _origAddLoan = window.addLoan;
-window.addLoan = function() {
-  if (!isPro() && !isDemo()) { openPaywall('loans'); return; }
-  _origAddLoan?.apply(this, arguments);
-};
-
-// Override addGoal to check Pro
-const _origAddGoal = window.addGoal;
-window.addGoal = function() {
-  if (!isPro() && !isDemo()) { openPaywall('goals'); return; }
-  _origAddGoal?.apply(this, arguments);
-};
-
-// ─── UI UPDATES ────────────────────────────────────────────
-function updateUserUI() {
-  if (!_user) return;
-  const name  = _user.displayName || _user.email;
-  const email = _user.email;
-  const photo = _user.photoURL;
-
-  // Avatar
-  const btn = document.getElementById('user-avatar-btn');
-  if (btn) {
-    btn.innerHTML = photo
-      ? `<img src="${photo}" alt="${name}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
-      : name.charAt(0).toUpperCase();
-  }
-
-  // Dropdown
-  const ddName  = document.getElementById('dd-user-name');
-  const ddEmail = document.getElementById('dd-user-email');
-  if (ddName)  ddName.textContent  = name;
-  if (ddEmail) ddEmail.textContent = email;
-
-  updatePlanBadge();
-}
-
-function updatePlanBadge() {
-  const badge   = document.getElementById('plan-badge');
-  const ddPlan  = document.getElementById('dd-user-plan');
-  if (!badge) return;
-
-  if (isPro() || isDemo()) {
-    badge.className = 'pro';
-    badge.textContent = '⭐ Pro';
-    if (ddPlan) { ddPlan.className='user-plan pro'; ddPlan.textContent='⭐ Pro — Active'; }
-  } else if (isExpired()) {
-    badge.className = 'expired';
-    badge.textContent = '⚠ Expired';
-    if (ddPlan) { ddPlan.className='user-plan expired'; ddPlan.textContent='⚠ Trial Expired'; }
-  } else {
-    const days = trialDaysLeft();
-    badge.className = 'trial';
-    badge.textContent = `Trial · ${days}d left`;
-    if (ddPlan) { ddPlan.className='user-plan trial'; ddPlan.textContent=`Free Trial · ${days} days left`; }
+    // onAuthStateChanged will call showAuthScreen()
+  } catch(e) {
+    console.error('[Auth] signOut:', e.message);
+    showAuthScreen();
+    toast('Signed out', 'in');
   }
 }
 
 // ─── AUTH SCREEN ───────────────────────────────────────────
 function showAuthScreen() {
   const s = document.getElementById('auth-screen');
-  if (s) { s.style.display='flex'; hideAuthLoading(); }
-  // Show local file warning
+  if (s) s.style.display = 'flex';
+  _hideSpinner();
   const lw = document.getElementById('auth-local-warning');
   if (lw) lw.style.display = _isLocal ? 'block' : 'none';
-  // Disable Google button if local
   const gb = document.querySelector('.btn-google');
-  if (gb && _isLocal) {
-    gb.style.opacity = '.5';
-    gb.style.cursor  = 'not-allowed';
-    gb.title = 'Deploy to Netlify or use npx serve . for Google login';
+  if (gb) {
+    gb.style.opacity = _isLocal ? '.45' : '1';
+    gb.style.cursor  = _isLocal ? 'not-allowed' : 'pointer';
   }
 }
+function enterDemoFromScreen() {
+  _license = { plan: 'demo', status: 'active' };
+  hideAuthScreen();
+  applyLicenseGates();
+  updatePlanBadge();
+  toast('Running in demo mode — all features unlocked', 'ok');
+}
+
 function hideAuthScreen() {
   const s = document.getElementById('auth-screen');
   if (s) s.style.display = 'none';
 }
-function showAuthLoading(msg) {
-  document.getElementById('auth-login-ui').style.display = 'none';
-  const loader = document.getElementById('auth-loading');
-  loader.style.display = 'flex';
-  document.getElementById('auth-loading-msg').textContent = msg || 'Please wait…';
-}
-function hideAuthLoading() {
-  const loginUi = document.getElementById('auth-login-ui');
-  const loader  = document.getElementById('auth-loading');
-  if (loginUi) loginUi.style.display = 'block';
-  if (loader)  loader.style.display  = 'none';
-}
 
 // ─── USER MENU ─────────────────────────────────────────────
 function toggleUserMenu() {
-  const dd = document.getElementById('user-dropdown');
-  dd.classList.toggle('open');
+  document.getElementById('user-dropdown').classList.toggle('open');
 }
 function closeUserMenu() {
-  document.getElementById('user-dropdown').classList.remove('open');
+  const dd = document.getElementById('user-dropdown');
+  if (dd) dd.classList.remove('open');
 }
 document.addEventListener('click', e => {
   const hdrUser = document.querySelector('.hdr-user');
-  if (hdrUser && !hdrUser.contains(e.target))
-    closeUserMenu();
+  if (hdrUser && !hdrUser.contains(e.target)) closeUserMenu();
 });
-
-// ─── PAYWALL ───────────────────────────────────────────────
-function openPaywall(reason) {
-  const overlay = document.getElementById('paywall-overlay');
-  const title   = document.getElementById('paywall-title');
-  const sub     = document.getElementById('paywall-sub');
-  const closebtn= document.getElementById('paywall-close-btn');
-
-  if (reason === 'expired') {
-    title.textContent = 'Your Trial Has Expired';
-    sub.textContent   = 'Upgrade to Pro to continue using Expensio.';
-    if (closebtn) closebtn.style.display = 'none';
-  } else if (reason === 'limit') {
-    title.textContent = 'Trial Limit Reached';
-    sub.textContent   = 'You\'ve reached the 50-expense trial limit. Upgrade to Pro for unlimited history.';
-    if (closebtn) closebtn.style.display = '';
-  } else if (reason === 'loans') {
-    title.textContent = 'Loan Tracker is a Pro Feature';
-    sub.textContent   = 'Track all your loans, EMIs and outstanding balances with Pro.';
-    if (closebtn) closebtn.style.display = '';
-  } else if (reason === 'goals') {
-    title.textContent = 'Savings Goals is a Pro Feature';
-    sub.textContent   = 'Set and track savings goals — emergency fund, vacation, laptop and more.';
-    if (closebtn) closebtn.style.display = '';
-  } else {
-    title.textContent = 'Upgrade to Pro';
-    sub.textContent   = 'Unlock loan tracker, savings goals and unlimited expense history.';
-    if (closebtn) closebtn.style.display = '';
-  }
-
-  overlay.classList.add('open');
-}
-function closePaywall() {
-  document.getElementById('paywall-overlay').classList.remove('open');
-}
-
-// ─── RAZORPAY PAYMENT ──────────────────────────────────────
-async function startPayment() {
-  if (!_user) return toast('Please sign in first', 'er');
-  if (!RAZORPAY_KEY_ID) return toast('Payment not configured', 'er');
-  const btn = document.getElementById('btn-pay-pro');
-  btn.disabled    = true;
-  btn.textContent = 'Creating order…';
-
-  try {
-    // Step 1: Create Razorpay order server-side (secret key stays on server)
-    const idToken = await _user.getIdToken();
-    const orderRes = await fetch('/.netlify/functions/pay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-      body: JSON.stringify({ action: 'create_order', uid: _user.uid })
-    });
-    const orderData = await orderRes.json();
-    if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
-
-    btn.textContent = 'Opening payment…';
-
-    // Step 2: Open Razorpay checkout with server-created order
-    const options = {
-      key:         RAZORPAY_KEY_ID,      // public key — safe in browser
-      order_id:    orderData.orderId,    // from server
-      amount:      orderData.amount,
-      currency:    'INR',
-      name:        'Expensio',
-      description: 'Pro License — 1 Year',
-      image:       '/icons/icon-192.png',
-      prefill: {
-        name:  _user.displayName || '',
-        email: _user.email       || '',
-      },
-      theme:  { color: '#6c3de8' },
-      method: { upi: true, card: true, netbanking: true, wallet: false, emi: false },
-
-      handler: async function(response) {
-        // Step 3: Verify payment server-side (signature check with secret key)
-        btn.disabled    = true;
-        btn.textContent = 'Verifying…';
-        await verifyAndActivate(response, idToken);
-        btn.disabled    = false;
-        btn.textContent = '₹499 · Get Pro Access';
-      },
-      modal: {
-        ondismiss: function() {
-          btn.disabled    = false;
-          btn.textContent = '₹499 · Get Pro Access';
-        }
-      }
-    };
-
-    const rzp = new Razorpay(options);
-    rzp.on('payment.failed', function(res) {
-      btn.disabled    = false;
-      btn.textContent = '₹499 · Get Pro Access';
-      toast('Payment failed: ' + (res.error?.description || 'Please try again'), 'er');
-    });
-    rzp.open();
-
-  } catch(e) {
-    btn.disabled    = false;
-    btn.textContent = '₹499 · Get Pro Access';
-    toast('Payment error: ' + e.message, 'er');
-  }
-}
-
-async function verifyAndActivate(rzpResponse, idToken) {
-  try {
-    // Server verifies signature using secret key, then writes Firestore
-    const res = await fetch('/.netlify/functions/pay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-      body: JSON.stringify({
-        action:             'verify_and_activate',
-        uid:                _user.uid,
-        razorpay_order_id:  rzpResponse.razorpay_order_id,
-        razorpay_payment_id:rzpResponse.razorpay_payment_id,
-        razorpay_signature: rzpResponse.razorpay_signature,
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Activation failed');
-
-    // Update local license state from server response
-    _license = { ..._license, ...data.license };
-    closePaywall();
-    applyLicenseGates();
-    toast('🎉 Pro activated! Welcome to Expensio Pro.', 'ok');
-  } catch(e) {
-    console.error('[Activate]', e);
-    toast('Payment received but activation failed. Contact support with payment ID: '
-      + rzpResponse.razorpay_payment_id, 'er');
-  }
-}
 
 // ─── BOOT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Show a loading state while config is fetched
-  const authScreen = document.getElementById('auth-screen');
-  if (authScreen) authScreen.style.display = 'flex';
-  showAuthLoading('Starting up…');
+  // Immediately show auth screen with spinner while config loads
+  const s  = document.getElementById('auth-screen');
+  const sp = document.getElementById('auth-loading');
+  const ui = document.getElementById('auth-login-ui');
+  if (s)  s.style.display  = 'flex';
+  if (sp) sp.style.display = 'flex';
+  if (ui) ui.style.display = 'none';
 
-  // Boot: load config from server, then init Firebase
-  initFirebase().then(() => {
-    // Handle redirect result after config is loaded (popup-blocked fallback)
-    if (_fbReady && typeof firebase !== 'undefined') {
-      firebase.auth().getRedirectResult()
-        .then(result => {
-          if (result && result.user)
-            console.log('[Auth] Redirect sign-in:', result.user.email);
-        })
-        .catch(e => console.error('[Auth] Redirect error:', e));
-    }
-  });
+  initFirebase()
+    .then(() => {
+      if (_fbReady && _auth) {
+        _auth.getRedirectResult()
+          .then(r => { if (r?.user) console.log('[Auth] Redirect OK:', r.user.email); })
+          .catch(e => { if (e?.code !== 'auth/null') console.warn('[Auth] Redirect:', e?.code); });
+      }
+    })
+    .catch(e => {
+      console.error('[Auth] Boot error:', e);
+      _enterDemoMode('Boot error: ' + e.message);
+    });
 }, { capture: true });
 
 </script>
@@ -4006,7 +3734,23 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="auth-logo">💸 Expensio</div>
     <div class="auth-tagline">Personal Finance OS</div>
 
-    <div class="auth-features">
+    <!-- Setup instructions panel (shown when Firebase not configured) -->
+    <div id="auth-setup-panel" style="display:none;text-align:left;margin-bottom:1.2rem">
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:1rem;font-size:.74rem;color:#166534;line-height:1.8">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.82rem;margin-bottom:.5rem">⚙️ One-time setup needed</div>
+        <div>Open this file in a text editor and paste your Firebase config:</div>
+        <div style="background:#dcfce7;border-radius:7px;padding:.5rem .7rem;margin:.5rem 0;font-family:monospace;font-size:.7rem;color:#14532d">
+          const FIREBASE_CONFIG = &#123;<br>
+          &nbsp;&nbsp;apiKey: "AIzaSy...",<br>
+          &nbsp;&nbsp;authDomain: "your-app.firebaseapp.com",<br>
+          &nbsp;&nbsp;...<br>
+          &#125;;
+        </div>
+        <div>Find it at: <strong>Firebase Console → Project Settings → Your apps → Config</strong></div>
+      </div>
+    </div>
+
+    <div class="auth-features" id="auth-features-list">
       <div class="auth-feat"><span>📊</span> Track expenses across 14 categories</div>
       <div class="auth-feat"><span>💰</span> Budget, savings goals &amp; loan tracker</div>
       <div class="auth-feat"><span>✦</span> AI-powered financial insights</div>
@@ -4015,25 +3759,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div id="auth-login-ui">
       <div class="auth-divider">Sign in to get started</div>
-      <button class="btn-google" onclick="signInWithGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      <button class="btn-google" id="btn-google-signin" onclick="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" onerror="this.style.display='none'">
         Continue with Google
       </button>
+
+      <!-- Local file warning -->
       <div id="auth-local-warning" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:.8rem 1rem;margin-top:.8rem;font-size:.72rem;color:#92400e;line-height:1.65;text-align:left">
-        <strong>⚠ Local file detected</strong><br>
-        Google login requires a web server. Options:<br>
-        1. Deploy to <strong>Netlify</strong> (drag &amp; drop — free)<br>
-        2. Run locally: <code style="background:#fde68a;padding:1px 5px;border-radius:3px">npx serve .</code> then open <strong>http://localhost:3000</strong>
+        <strong>⚠ Serving as local file</strong><br>
+        Google sign-in requires HTTP. Choose one:<br>
+        1. Run: <code style="background:#fde68a;padding:1px 5px;border-radius:3px">npx serve .</code> → open <strong>localhost:3000</strong><br>
+        2. Deploy to <strong>Netlify</strong> (free, drag &amp; drop)
       </div>
+
       <div class="auth-note">
-        By continuing you agree to our Terms &amp; Privacy Policy.<br>
-        Your data stays on your device — we only store your account info and license status.
+        By continuing you agree to our Terms of Service &amp; Privacy Policy.
+      </div>
+      <div id="auth-demo-row" style="display:none;margin-top:.8rem;text-align:center">
+        <button onclick="enterDemoFromScreen()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:.68rem;cursor:pointer;text-decoration:underline;padding:4px">
+          Continue without login (demo mode)
+        </button>
       </div>
     </div>
 
     <div class="auth-loading" id="auth-loading">
       <div class="auth-spinner"></div>
-      <div style="font-size:.8rem;color:#64748b" id="auth-loading-msg">Signing you in…</div>
+      <div style="font-size:.8rem;color:#64748b" id="auth-loading-msg">Starting up…</div>
     </div>
   </div>
 </div>
@@ -4090,16 +3841,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- User dropdown -->
-<div id="user-dropdown">
-  <div class="user-info">
-    <div class="user-name" id="dd-user-name">—</div>
-    <div class="user-email" id="dd-user-email">—</div>
-    <div class="user-plan trial" id="dd-user-plan">Free Trial</div>
-  </div>
-  <button class="dd-item" onclick="openPaywall()">⭐ Upgrade to Pro</button>
-  <button class="dd-item" onclick="closeUserMenu()">⚙ Settings</button>
-  <button class="dd-item danger" onclick="signOutUser()">↩ Sign Out</button>
-</div>
+
 
 </body>
 </html>
