@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expensio — Setup Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;line-height:1.6}
+header{background:linear-gradient(135deg,#6c3de8,#8b5cf6);color:#fff;padding:2rem;text-align:center}
+header h1{font-size:1.8rem;font-weight:800;margin-bottom:.3rem}
+header p{opacity:.85;font-size:.95rem}
+.progress{display:flex;gap:0;background:#fff;border-bottom:2px solid #e2e8f0;padding:0;overflow-x:auto}
+.prog-step{flex:1;min-width:90px;padding:.7rem .5rem;text-align:center;font-size:.72rem;font-weight:600;color:#94a3b8;border-bottom:3px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap}
+.prog-step.active{color:#6c3de8;border-color:#6c3de8}
+.prog-step.done{color:#059669;border-color:#059669}
+.prog-step.done::before{content:'✓ '}
+main{max-width:760px;margin:0 auto;padding:2rem 1.5rem}
+.step-panel{display:none}
+.step-panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h2{font-size:1.3rem;font-weight:800;margin-bottom:.4rem;display:flex;align-items:center;gap:.6rem}
+.step-desc{color:#475569;font-size:.9rem;margin-bottom:1.6rem;line-height:1.65}
+.card{background:#fff;border-radius:14px;padding:1.4rem;margin-bottom:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.card-title{font-weight:700;font-size:.88rem;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem;color:#334155}
+.instruction{display:flex;gap:.9rem;align-items:flex-start;margin-bottom:.85rem}
+.instruction:last-child{margin-bottom:0}
+.dot{width:22px;height:22px;border-radius:50%;background:#ede9fe;color:#6c3de8;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.inst-body{flex:1;font-size:.88rem;color:#374151;line-height:1.6}
+.inst-body strong{color:#1e293b}
+code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;padding:1px 6px;font-family:'SF Mono',Monaco,monospace;font-size:.82em;color:#0f172a}
+.env-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.env-table th{background:#f8fafc;padding:.55rem .8rem;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #e2e8f0;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+.env-table td{padding:.55rem .8rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.env-table tr:last-child td{border-bottom:none}
+.env-key{font-family:'SF Mono',Monaco,monospace;font-size:.8rem;color:#0f172a;font-weight:600}
+.env-val{color:#475569;font-size:.8rem}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600}
+.tag-fb{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.tag-rz{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.tag-set{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff}
+.tag-secret{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.action-row{display:flex;gap:.8rem;margin-top:1.5rem;flex-wrap:wrap}
+.btn-next{background:#6c3de8;color:#fff;border:none;border-radius:10px;padding:.7rem 1.8rem;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s}
+.btn-next:hover{background:#5b30d0;transform:translateY(-1px)}
+.btn-prev{background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:.7rem 1.2rem;font-weight:600;font-size:.88rem;cursor:pointer}
+.btn-prev:hover{background:#e2e8f0}
+.check{display:flex;align-items:center;gap:.7rem;padding:.65rem .9rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;margin-bottom:.6rem;font-size:.85rem;color:#166534}
+.check::before{content:'✓';font-weight:700;color:#16a34a}
+.warn-box{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:1rem 1.1rem;font-size:.85rem;color:#92400e;line-height:1.65;margin-bottom:1rem}
+.warn-box strong{color:#78350f}
+.success-banner{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-radius:14px;padding:2rem;text-align:center;margin-top:1rem}
+.success-banner h3{font-size:1.4rem;margin-bottom:.5rem}
+.success-banner p{opacity:.9;font-size:.9rem;line-height:1.65}
+.file-tree{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:1.2rem 1.4rem;font-family:'SF Mono',Monaco,monospace;font-size:.8rem;line-height:2}
+.ft-dir{color:#7dd3fc}.ft-file{color:#86efac}.ft-comment{color:#64748b}
+.secret-shield{display:flex;align-items:flex-start;gap:.9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem}
+.shield-icon{font-size:1.6rem;flex-shrink:0}
+.shield-body{font-size:.85rem;color:#7f1d1d;line-height:1.65}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💸 Expensio Setup Guide</h1>
+  <p>Connect GitHub → Netlify → Firebase → Razorpay in 30 minutes</p>
+</header>
+
+<div class="progress" id="progress-bar">
+  <div class="prog-step active" onclick="goStep(0)">1. GitHub</div>
+  <div class="prog-step" onclick="goStep(1)">2. Firebase</div>
+  <div class="prog-step" onclick="goStep(2)">3. Razorpay</div>
+  <div class="prog-step" onclick="goStep(3)">4. Netlify</div>
+  <div class="prog-step" onclick="goStep(4)">5. Env Vars</div>
+  <div class="prog-step" onclick="goStep(5)">6. Auto-Deploy</div>
+  <div class="prog-step" onclick="goStep(6)">7. Test</div>
+</div>
+
+<main>
+
+<!-- ── STEP 0: GitHub ── -->
+<div class="step-panel active" id="panel-0">
+  <h2>📁 Step 1 — GitHub Repository</h2>
+  <p class="step-desc">Upload the project to GitHub so Netlify can pull it and auto-deploy every time you make a change.</p>
+
+  <div class="card">
+    <div class="card-title">📤 Create a new GitHub repo and upload files</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body">Go to <strong>github.com</strong> → sign in → click <strong>New repository</strong> (green button, top right).</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body">Name it <code>expensio</code> → set to <strong>Public</strong> (required for free Netlify) → <strong>Create repository</strong>.</div></div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">On the next screen click <strong>"uploading an existing file"</strong> link.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body">Extract the ZIP you downloaded → drag <strong>all files and folders</strong> into the upload area. Make sure <code>netlify/functions/</code> folder is included.</div></div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Click <strong>Commit changes</strong> → your code is now on GitHub.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📂 Your repo should contain these files</div>
+    <div class="file-tree">
+<span class="ft-dir">expensio/</span>
+├── <span class="ft-file">index.html</span>          <span class="ft-comment"># the app</span>
+├── <span class="ft-file">manifest.json</span>
+├── <span class="ft-file">sw.js</span>
+├── <span class="ft-file">netlify.toml</span>        <span class="ft-comment"># deploy config</span>
+├── <span class="ft-file">README.md</span>
+├── <span class="ft-dir">icons/</span>
+│   └── <span class="ft-file">icon-*.png</span>
+└── <span class="ft-dir">netlify/functions/</span>
+    ├── <span class="ft-file">config.js</span>         <span class="ft-comment"># serves Firebase keys</span>
+    └── <span class="ft-file">pay.js</span>            <span class="ft-comment"># Razorpay + verification</span>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-next" onclick="nextStep()">Next: Firebase →</button>
+  </div>
+</div>
+
+<!-- ── STEP 1: Firebase ── -->
+<div class="step-panel" id="panel-1">
+  <h2>🔥 Step 2 — Firebase Project</h2>
+  <p class="step-desc">Firebase handles Google login and stores each user's license status (trial / pro / expired). It's free for thousands of users.</p>
+
+  <div class="card">
+    <div class="card-title">🏗 Create the project</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body">Go to <strong>console.firebase.google.com</strong> → click <strong>Add project</strong>.</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body">Name it <code>expensio-app</code> → Continue → disable Google Analytics → <strong>Create project</strong>.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 Enable Google Sign-In</div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">Left sidebar → <strong>Build → Authentication → Get started</strong>.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body"><strong>Sign-in method</strong> tab → click <strong>Google</strong> → toggle Enable → set support email → <strong>Save</strong>.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 Create Firestore Database</div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Left sidebar → <strong>Build → Firestore Database → Create database</strong>.</div></div>
+    <div class="instruction"><div class="dot">6</div><div class="inst-body">Choose <strong>Production mode</strong> → Next → region: <code>asia-south1 (Mumbai)</code> → <strong>Enable</strong>.</div></div>
+    <div class="instruction"><div class="dot">7</div><div class="inst-body">Click <strong>Rules</strong> tab → replace everything with this and click <strong>Publish</strong>:
+      <br><br><code>rules_version = '2';<br>service cloud.firestore {<br>&nbsp;&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;&nbsp;&nbsp;match /licenses/{userId} {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if request.auth != null<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp; request.auth.uid == userId;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;}<br>}</code>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Get your API keys (you'll paste these into Netlify)</div>
+    <div class="instruction"><div class="dot">8</div><div class="inst-body">Click the <strong>⚙ gear icon</strong> (next to "Project Overview") → <strong>Project settings</strong>.</div></div>
+    <div class="instruction"><div class="dot">9</div><div class="inst-body">Scroll to <strong>Your apps</strong> → click the <strong>&lt;/&gt;</strong> web icon → nickname: <code>expensio-web</code> → <strong>Register app</strong>.</div></div>
+    <div class="instruction"><div class="dot">10</div><div class="inst-body">You'll see a block with 6 values — <strong>keep this tab open</strong>, you'll paste them in Step 5.</div></div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+    <button class="btn-next" onclick="nextStep()">Next: Razorpay →</button>
+  </div>
+</div>
+
+<!-- ── STEP 2: Razorpay ── -->
+<div class="step-panel" id="panel-2">
+  <h2>💳 Step 3 — Razorpay Account</h2>
+  <p class="step-desc">Razorpay processes payments in India — UPI, cards, and net banking. Free to set up; they take 2% per transaction.</p>
+
+  <div class="card">
+    <div class="card-title">🏦 Create account</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body">Go to <strong>razorpay.com</strong> → Sign up with your email.</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body">Complete <strong>KYC</strong>: enter business name, PAN, and bank account. This takes 1-2 business days to verify.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 Get API keys</div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">Dashboard → <strong>Settings → API Keys</strong>.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body">Click <strong>Generate Test Key</strong> first (for testing). You'll get two values:<br><br>
+      • <strong>Key ID</strong> — starts with <code>rzp_test_...</code> (safe to share, goes in Netlify env vars)<br>
+      • <strong>Key Secret</strong> — starts with a long string (keep this private, never put in code)
+    </div></div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Enable payment methods: <strong>Settings → Payment Methods</strong> → enable <strong>UPI</strong>, <strong>Credit Card</strong>, <strong>Debit Card</strong>, <strong>Net Banking</strong> → Save.</div></div>
+  </div>
+
+  <div class="secret-shield">
+    <div class="shield-icon">🔒</div>
+    <div class="shield-body">
+      <strong>Important:</strong> You have two Razorpay keys — the <strong>Key ID</strong> and the <strong>Key Secret</strong>.<br>
+      The Key ID is safe to store in Netlify env vars and gets sent to the browser.<br>
+      The <strong>Key Secret must stay on the server only</strong> — it's what signs and verifies payments. Never paste it in your HTML.
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+    <button class="btn-next" onclick="nextStep()">Next: Netlify →</button>
+  </div>
+</div>
+
+<!-- ── STEP 3: Netlify ── -->
+<div class="step-panel" id="panel-3">
+  <h2>🌐 Step 4 — Netlify Site</h2>
+  <p class="step-desc">Connect Netlify to your GitHub repo. Every time you push code, Netlify rebuilds and deploys automatically.</p>
+
+  <div class="card">
+    <div class="card-title">🔗 Connect GitHub → Netlify</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body">Go to <strong>app.netlify.com</strong> → sign in → click <strong>Add new site → Import an existing project</strong>.</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body">Click <strong>GitHub</strong> → authorise Netlify → select your <code>expensio</code> repo.</div></div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">Build settings are auto-detected from <code>netlify.toml</code>. Just click <strong>Deploy site</strong>.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body">Your site URL will be something like <code>expensio-abc123.netlify.app</code>. Copy this — you'll need it in Firebase and env vars.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔒 Add your domain to Firebase</div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Back in Firebase Console → <strong>Authentication → Settings → Authorized domains → Add domain</strong>.</div></div>
+    <div class="instruction"><div class="dot">6</div><div class="inst-body">Add <code>expensio-abc123.netlify.app</code> (your actual Netlify URL) and also add <code>localhost</code>.</div></div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+    <button class="btn-next" onclick="nextStep()">Next: Environment Variables →</button>
+  </div>
+</div>
+
+<!-- ── STEP 4: Env Vars ── -->
+<div class="step-panel" id="panel-4">
+  <h2>⚙️ Step 5 — Environment Variables</h2>
+  <p class="step-desc">This is where all secrets live — on Netlify's servers, never in your code. Go to: <strong>Netlify → your site → Site configuration → Environment variables</strong>.</p>
+
+  <div class="warn-box">
+    <strong>⚠ Never put these values in your HTML or JavaScript files.</strong> Anyone viewing your page source would see them. Netlify env vars are only readable by server functions — completely hidden from users.
+  </div>
+
+  <div class="card">
+    <table class="env-table">
+      <thead><tr><th>Variable name</th><th>Where to get it</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td class="env-key">FIREBASE_API_KEY</td><td class="env-val">Firebase Project Settings → Your apps → config</td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">FIREBASE_AUTH_DOMAIN</td><td class="env-val"><code>your-project.firebaseapp.com</code></td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">FIREBASE_PROJECT_ID</td><td class="env-val">your project name/ID</td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">FIREBASE_STORAGE_BUCKET</td><td class="env-val"><code>your-project.appspot.com</code></td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">FIREBASE_MESSAGING_SENDER_ID</td><td class="env-val">numeric sender ID</td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">FIREBASE_APP_ID</td><td class="env-val">long app ID string</td><td><span class="tag tag-fb">Firebase</span></td></tr>
+        <tr><td class="env-key">RAZORPAY_KEY_ID</td><td class="env-val"><code>rzp_live_...</code> (Key ID only)</td><td><span class="tag tag-rz">Razorpay</span></td></tr>
+        <tr><td class="env-key">RAZORPAY_KEY_SECRET</td><td class="env-val">Key Secret — never in HTML</td><td><span class="tag tag-secret">🔒 Secret</span></td></tr>
+        <tr><td class="env-key">SITE_URL</td><td class="env-val"><code>https://your-site.netlify.app</code></td><td><span class="tag tag-set">Settings</span></td></tr>
+        <tr><td class="env-key">PRO_PRICE</td><td class="env-val"><code>499</code></td><td><span class="tag tag-set">Settings</span></td></tr>
+        <tr><td class="env-key">TRIAL_DAYS</td><td class="env-val"><code>30</code></td><td><span class="tag tag-set">Settings</span></td></tr>
+        <tr><td class="env-key">TRIAL_MAX_EXP</td><td class="env-val"><code>50</code></td><td><span class="tag tag-set">Settings</span></td></tr>
+        <tr><td class="env-key">PRO_DURATION_DAYS</td><td class="env-val"><code>365</code></td><td><span class="tag tag-set">Settings</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔄 Redeploy after adding variables</div>
+    <div class="instruction"><div class="dot">!</div><div class="inst-body">After saving all variables: <strong>Deploys → Trigger deploy → Deploy site</strong>. Env vars only take effect on a fresh deploy.</div></div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+    <button class="btn-next" onclick="nextStep()">Next: Auto-Deploy →</button>
+  </div>
+</div>
+
+<!-- ── STEP 5: GitHub Actions ── -->
+<div class="step-panel" id="panel-5">
+  <h2>🤖 Step 6 — Automatic Deployment</h2>
+  <p class="step-desc">Once set up, every time you push a change to GitHub, Netlify automatically rebuilds and deploys. No manual uploads ever again.</p>
+
+  <div class="card">
+    <div class="card-title">🔑 Get Netlify tokens</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body"><strong>Netlify Personal Access Token:</strong><br>Netlify → click your avatar (top right) → <strong>User settings → Applications → Personal access tokens → New access token</strong> → copy the token.</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body"><strong>Netlify Site ID:</strong><br>Netlify → your site → <strong>Site configuration → General → Site ID</strong> → copy the ID.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔐 Add GitHub Secrets</div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">GitHub repo → <strong>Settings → Secrets and variables → Actions → New repository secret</strong>.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body">Add secret: name = <code>NETLIFY_AUTH_TOKEN</code>, value = your personal access token.</div></div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Add secret: name = <code>NETLIFY_SITE_ID</code>, value = your site ID.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✅ How it works from now on</div>
+    <div class="check">Edit any file locally (e.g. change Pro price in netlify.toml)</div>
+    <div class="check">Run: <code>git add . && git commit -m "update price" && git push</code></div>
+    <div class="check">GitHub Actions detects the push → runs deploy.yml → deploys to Netlify</div>
+    <div class="check">Live in ~60 seconds. No manual steps.</div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+    <button class="btn-next" onclick="nextStep()">Next: Test Everything →</button>
+  </div>
+</div>
+
+<!-- ── STEP 6: Test ── -->
+<div class="step-panel" id="panel-6">
+  <h2>🧪 Step 7 — Test Everything</h2>
+  <p class="step-desc">Open your Netlify URL and run through each test below.</p>
+
+  <div class="card">
+    <div class="card-title">🔐 Test Google Login</div>
+    <div class="check">Open your site URL — purple login screen should appear</div>
+    <div class="check">Click "Continue with Google" — Google account picker opens</div>
+    <div class="check">Sign in — dashboard loads with "Trial · 30d left" badge</div>
+    <div class="check">Refresh page — still logged in (no login screen again)</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚧 Test Trial Limits</div>
+    <div class="check">Click Loans tab in the Finance modal → "Pro Feature" gate shown</div>
+    <div class="check">Click Savings Goals panel → "Pro Feature" gate shown</div>
+    <div class="check">Add 50 expenses → 51st should open paywall automatically</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💳 Test Razorpay Payment (Test Mode)</div>
+    <div class="instruction"><div class="dot">1</div><div class="inst-body">Make sure you're using the <code>rzp_test_</code> Key ID (not live) in Netlify env vars for testing.</div></div>
+    <div class="instruction"><div class="dot">2</div><div class="inst-body">Click the "Trial" badge in the header → paywall opens.</div></div>
+    <div class="instruction"><div class="dot">3</div><div class="inst-body">Click <strong>"₹499 · Get Pro Access"</strong> → Razorpay checkout opens.</div></div>
+    <div class="instruction"><div class="dot">4</div><div class="inst-body">Test card: <code>4111 1111 1111 1111</code> | Expiry: any future date | CVV: any 3 digits.</div></div>
+    <div class="instruction"><div class="dot">5</div><div class="inst-body">Or test UPI: enter <code>success@razorpay</code> as the UPI ID.</div></div>
+    <div class="instruction"><div class="dot">6</div><div class="inst-body">Complete payment → should show "🎉 Pro activated!" toast → badge changes to "⭐ Pro".</div></div>
+    <div class="instruction"><div class="dot">7</div><div class="inst-body">Refresh page → still Pro, Loans and Goals unlocked.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚀 Go Live</div>
+    <div class="instruction"><div class="dot">!</div><div class="inst-body">When ready for real payments: replace <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in Netlify env vars with your <strong>live keys</strong> (<code>rzp_live_...</code>) → Trigger deploy.</div></div>
+  </div>
+
+  <div class="success-banner">
+    <h3>🎉 You're live!</h3>
+    <p>Your app is running on Netlify with Google login, 30-day trial, and Razorpay Pro payments.<br>Every git push to GitHub automatically deploys in ~60 seconds.</p>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-prev" onclick="prevStep()">← Back</button>
+  </div>
+</div>
+
+</main>
+
+<script>
+let cur = 0;
+const total = 7;
+function goStep(n) {
+  document.getElementById('panel-' + cur).classList.remove('active');
+  document.querySelectorAll('.prog-step')[cur].classList.remove('active');
+  if (n > cur) document.querySelectorAll('.prog-step')[cur].classList.add('done');
+  cur = n;
+  document.getElementById('panel-' + cur).classList.add('active');
+  document.querySelectorAll('.prog-step')[cur].classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function nextStep() { if (cur < total - 1) goStep(cur + 1); }
+function prevStep() { if (cur > 0) goStep(cur - 1); }
+</script>
+
+</body>
+</html>
